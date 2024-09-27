@@ -12,7 +12,7 @@ from langchain_core.output_parsers import StrOutputParser, PydanticOutputParser
 from langchain_community.llms import Ollama
 from pydantic import BaseModel, Field
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from typing import List
+from typing import List, Optional, Union
 from dotenv import load_dotenv
 
 class OddLot(BaseModel):
@@ -21,6 +21,51 @@ class OddLot(BaseModel):
     higher_price: str = Field(description="The maximum purchase price per share of the odd-lot tender offer.")
     higher_price_currency: str = Field(description="The currency of the maximum purchase price per share of the odd-lot tender offer.")
     expiration_date: str = Field(description="The date the odd-lot tender offer expires (formatted as YYYY-MM-DD).")
+
+class PromptManager:
+    """Handles different types of prompt templates."""
+    def __init__(self, type: Optional[str]=None):
+        self.type = type
+
+    @property
+    def prompt(self):
+        return self.get_prompt()
+    
+    @property
+    def parser(self):
+        return self.get_parser()
+
+    def get_parser(self) -> Union[PydanticOutputParser, StrOutputParser]:
+        if self.type == "ODDLOT":
+            return PydanticOutputParser(pydantic_object=OddLot)
+        elif self.type == "ASK":
+            return StrOutputParser()
+
+    def get_prompt(self):
+        """Returns the appropriate prompt based on the type."""
+        if self.type == "ODDLOT":
+            return self.define_odd_lot_prompt()
+        elif self.type == "ASK":
+            return self.define_general_prompt()
+        else:
+            raise ValueError(f"Unsupported prompt type: {self.type}")
+
+    @staticmethod
+    def define_odd_lot_prompt(parser_: PydanticOutputParser) -> PromptTemplate:
+        """Defines a prompt template for OddLot extraction."""
+        format_instructions = parser_.get_format_instructions()
+        return PromptTemplate(
+            template="Please extract the following information from the file provided"
+            "\n\n{format_instructions}\n\n{file}",
+            input_variables=["file"],
+            partial_variables={"format_instructions": format_instructions},
+        )
+
+    @staticmethod
+    def define_general_prompt():
+        """Pulls a general RAG prompt from the hub."""
+        return hub.pull("rlm/rag-prompt") 
+
 
 class RAGSystem:
     def __init__(self, html_files: List[dict], use_local: bool = True):
@@ -41,8 +86,9 @@ class RAGSystem:
         return self.create_vector_store()
     
     @property
-    def prompt(self):
-        return self.define_prompt()
+    def prompt(self, type="ODDLOT"):
+        if type == "ODDLOT":
+            return self.define_odd_lot_prompt()
     
     @property
     def retriever(self):
@@ -64,7 +110,7 @@ class RAGSystem:
     def create_document_from_file(file):
         return [Document(metadata={"source": file["source"]}, page_content=file["page_content"])]
     
-    def define_prompt(self):
+    def define_odd_lot_prompt(self):
         parser = self.parser
         format_instructions = parser.get_format_instructions()
         prompt = PromptTemplate(
@@ -84,7 +130,7 @@ class RAGSystem:
             return OpenAIEmbeddings(openai_api_key=openai_api_key)  # Example OpenAI model
         
     def create_vector_store(self):
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=300)
         splits = text_splitter.split_documents(self.documents)
         vectorstore = Chroma.from_documents(documents=splits, embedding=self.get_embedding_model())
         return vectorstore
@@ -104,6 +150,20 @@ class RAGSystem:
         rag_chain = self.prompt | self.llm | self.parser
         return rag_chain
     
-    def retrieve_answers(self):
-        combined_content = "\n\n".join([doc.page_content for doc in self.documents])
+    def retrieve_oddlot_from_single_doc(self):
+        combined_content = "\n\n".join(doc.page_content for doc in self.documents)
         return self.rag_chain.invoke({"html_file": combined_content})
+    
+    def retrieve_oddlot_from_docs(self):
+        retrieved_docs = self.retriever.invoke(self.parser.get_format_instructions())
+        combined_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
+        return self.rag_chain.invoke({"html_file": combined_content})
+    
+    def ask(self, query):
+        retrieved_docs = self.retriever.invoke(query)
+        combined_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
+        pm = PromptManager(type="ASK")
+        rag_chain = pm.prompt | self.llm | pm.parser
+        return rag_chain.invoke({"context": combined_content, "question": query})
+        
+    
