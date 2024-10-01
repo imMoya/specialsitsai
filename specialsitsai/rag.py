@@ -16,11 +16,23 @@ from typing import List, Optional, Union
 from dotenv import load_dotenv
 
 class OddLot(BaseModel):
-    lower_price: str = Field(description="The minimum purchase price per share of the odd-lot tender offer.")
-    lower_price_currency: str = Field(description="The currency of the minimum purchase price per share of the odd-lot tender offer.")
-    higher_price: str = Field(description="The maximum purchase price per share of the odd-lot tender offer.")
-    higher_price_currency: str = Field(description="The currency of the maximum purchase price per share of the odd-lot tender offer.")
-    expiration_date: str = Field(description="The date the odd-lot tender offer expires (formatted as YYYY-MM-DD).")
+    lower_price: str = Field(description="The minimum purchase price per share the company is offering in the odd-lot tender offer. Note this is a number of the price per share (not a price in millions)")
+    lower_price_currency: str = Field(description="The currency in which the minimum purchase price per share is denominated.")
+    higher_price: str = Field(description="The maximum purchase price per share the company is offering in the odd-lot tender offer.Note this is a number of the price per share (not a price in millions)")
+    higher_price_currency: str = Field(description="The currency in which the maximum purchase price per share is denominated.")
+    shares_sought: str = Field(description="The total number of shares the company seeks to purchase.")
+    expiration_date: str = Field(description="The deadline for shareholders to participate in the odd-lot tender offer, formatted as YYYY-MM-DD.")
+    payment_terms: str = Field(description="Terms regarding how payment will be made for the purchased shares.")
+    withdrawal_rights: str = Field(description="Information about the right of shareholders to withdraw their tendered shares and the associated deadline.")
+    tax_consequences: str = Field(description="Description of any potential tax implications for shareholders participating in the offer.")
+    method_of_tendering: str = Field(description="Instructions on how to properly tender shares in the offer.")
+    proration: str = Field(description="Indicates whether proration will apply if more shares are tendered than the company is willing to purchase.")
+    financing_conditions: str = Field(description="Details about how the tender offer is financed or whether there are specific financing conditions.")
+    regulatory_approvals: str = Field(description="List any necessary regulatory approvals or clearances that must be obtained before the tender offer can be completed.")
+    factors_affecting_pricing: str = Field(description="A description of factors that the company considered when setting the purchase price range.")
+    shareholder_requirements: str = Field(description="Requirements a shareholder must meet to qualify as an odd-lot holder (e.g., holding fewer than 100 shares).")
+    oddlot_priority: str = Field(description="A statement indicating whether odd-lot holders are given priority in the tender offer.")
+    risks: str = Field(description="Identify any conditions or contingencies mentioned in the tender offer that could result in its cancellation. Please, expand in the explanation")
 
 class PromptManager:
     """Handles different types of prompt templates."""
