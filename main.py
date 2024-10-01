@@ -8,7 +8,8 @@ if __name__ == "__main__":
     # Parse the HTML files
     html_files = ssai.HTMLHandler(oddlot_folder).process_html_files()
     #html_file = [file for file in html_files if "MNST" in file["source"]]
-    html_file = [file for file in html_files if "SILA" in file["source"]]
+    html_file = [file for file in html_files if "ZH" in file["source"]]
+    #MSCF not reading well
     
 
     # Set up the RAG system

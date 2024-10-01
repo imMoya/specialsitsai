@@ -10,15 +10,15 @@ from langchain_core.prompts.prompt import PromptTemplate
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_core.output_parsers import StrOutputParser, PydanticOutputParser
 from langchain_community.llms import Ollama
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing import List, Optional, Union
 from dotenv import load_dotenv
 
 class OddLot(BaseModel):
-    lower_price: str = Field(description="The minimum purchase price per share the company is offering in the odd-lot tender offer. Note this is a number of the price per share (not a price in millions)")
+    lower_price: Optional[str] = Field(description="What is the lowest price in dollars (or other currency) that the company offers to pay per share in this odd-lot tender offer?")
     lower_price_currency: str = Field(description="The currency in which the minimum purchase price per share is denominated.")
-    higher_price: str = Field(description="The maximum purchase price per share the company is offering in the odd-lot tender offer.Note this is a number of the price per share (not a price in millions)")
+    higher_price: Optional[str] = Field(description="What is the highest price in dollars (or other currency) that the company offers to pay per share in this odd-lot tender offer?")
     higher_price_currency: str = Field(description="The currency in which the maximum purchase price per share is denominated.")
     shares_sought: str = Field(description="The total number of shares the company seeks to purchase.")
     expiration_date: str = Field(description="The deadline for shareholders to participate in the odd-lot tender offer, formatted as YYYY-MM-DD.")
@@ -33,6 +33,13 @@ class OddLot(BaseModel):
     shareholder_requirements: str = Field(description="Requirements a shareholder must meet to qualify as an odd-lot holder (e.g., holding fewer than 100 shares).")
     oddlot_priority: str = Field(description="A statement indicating whether odd-lot holders are given priority in the tender offer.")
     risks: str = Field(description="Identify any conditions or contingencies mentioned in the tender offer that could result in its cancellation. Please, expand in the explanation")
+
+    @field_validator('lower_price', 'higher_price', mode='before')
+    def check_price(cls, v):
+        # Check if the value is a valid number, otherwise return None
+        if v is None or not v.replace('.', '', 1).isdigit():  # Allow for decimal numbers
+            return None
+        return v
 
 class PromptManager:
     """Handles different types of prompt templates."""
