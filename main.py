@@ -20,11 +20,14 @@ if __name__ == "__main__":
     #    "Summarize in 300 words maximum the odd lot file including company name, purchase prices and expiry date")
     #)
     # Extract info from retrieved chunks
-    print(ssai.RAGSystem(html_file, use_local=False).oddlot_from_docs())
+    rag = ssai.RAGSystem(html_file, use_local=False)
+    print(rag.oddlot_from_docs())
+    chatbot = ssai.Chatbot(rag)
+    chatbot.start_chat()
 
-    spinoff_folder = "/Users/ignaciomoyaredondo/OneDrive/obsidian/01_projects/secedgarspecial/db_spinoffs/html"
-    html_files = ssai.HTMLHandler(spinoff_folder).process_html_files()
-    html_file = [file for file in html_files if "SEG" in file["source"]]
+    #spinoff_folder = "/Users/ignaciomoyaredondo/OneDrive/obsidian/01_projects/secedgarspecial/db_spinoffs/html"
+    #html_files = ssai.HTMLHandler(spinoff_folder).process_html_files()
+    #html_file = [file for file in html_files if "SEG" in file["source"]]
     #print(html_file)
 
     #print(ssai.RAGSystem(html_file, use_local=False).ask_from_docs(
