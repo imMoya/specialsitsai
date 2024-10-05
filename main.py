@@ -21,7 +21,7 @@ if __name__ == "__main__":
     #)
     # Extract info from retrieved chunks
     rag = ssai.RAGSystem(html_file, use_local=False)
-    print(rag.oddlot_from_docs_isolated())
+    print(rag.query_oddlot_details())
     #chatbot = ssai.Chatbot(rag)
     #chatbot.start_chat()
 
