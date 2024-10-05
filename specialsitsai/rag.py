@@ -15,31 +15,96 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing import List, Optional, Union
 from dotenv import load_dotenv
 
-class OddLot(BaseModel):
-    lower_price: Optional[str] = Field(description="What is the lowest price in dollars (or other currency) that the company offers to pay per share in this odd-lot tender offer?")
-    lower_price_currency: str = Field(description="The currency in which the minimum purchase price per share is denominated.")
-    higher_price: Optional[str] = Field(description="What is the highest price in dollars (or other currency) that the company offers to pay per share in this odd-lot tender offer?")
-    higher_price_currency: str = Field(description="The currency in which the maximum purchase price per share is denominated.")
-    shares_sought: str = Field(description="The total number of shares the company seeks to purchase.")
-    expiration_date: str = Field(description="The deadline for shareholders to participate in the odd-lot tender offer, formatted as YYYY-MM-DD.")
-    payment_terms: str = Field(description="Terms regarding how payment will be made for the purchased shares.")
-    withdrawal_rights: str = Field(description="Information about the right of shareholders to withdraw their tendered shares and the associated deadline.")
-    tax_consequences: str = Field(description="Description of any potential tax implications for shareholders participating in the offer.")
-    method_of_tendering: str = Field(description="Instructions on how to properly tender shares in the offer.")
-    proration: str = Field(description="Indicates whether proration will apply if more shares are tendered than the company is willing to purchase.")
-    financing_conditions: str = Field(description="Details about how the tender offer is financed or whether there are specific financing conditions.")
-    regulatory_approvals: str = Field(description="List any necessary regulatory approvals or clearances that must be obtained before the tender offer can be completed.")
-    factors_affecting_pricing: str = Field(description="A description of factors that the company considered when setting the purchase price range.")
-    shareholder_requirements: str = Field(description="Requirements a shareholder must meet to qualify as an odd-lot holder (e.g., holding fewer than 100 shares).")
-    oddlot_priority: str = Field(description="A statement indicating whether odd-lot holders are given priority in the tender offer.")
-    risks: str = Field(description="Identify any conditions or contingencies mentioned in the tender offer that could result in its cancellation. Please, expand in the explanation")
 
-    @field_validator('lower_price', 'higher_price', mode='before')
-    def check_price(cls, v):
-        # Check if the value is a valid number, otherwise return None
-        if v is None or not v.replace('.', '', 1).isdigit():  # Allow for decimal numbers
-            return None
-        return v
+class OddLot(BaseModel):
+    #lower_price: Optional[str] = Field(description="What is the lowest price in dollars (or other currency) that the company offers to pay per share in this odd-lot tender offer?")
+    lower_price: str = Field(description="The currency in which the minimum purchase price per share is denominated.")
+    higher_price: str = Field(description="What is the highest price in dollars (or other currency) that the company offers to pay per share in this odd-lot tender offer?")
+    #higher_price_currency: str = Field(description="The currency in which the maximum purchase price per share is denominated.")
+    #shares_sought: str = Field(description="The total number of shares the company seeks to purchase.")
+    expiration_date: str = Field(description="The deadline for the odd-lot tender offer. Format it as YYYY-MM-DD")
+    #payment_terms: str = Field(description="Terms regarding how payment will be made for the purchased shares.")
+    #withdrawal_rights: str = Field(description="Information about the right of shareholders to withdraw their tendered shares and the associated deadline.")
+    #tax_consequences: str = Field(description="Description of any potential tax implications for shareholders participating in the offer.")
+    #method_of_tendering: str = Field(description="Instructions on how to properly tender shares in the offer.")
+    #proration: str = Field(description="Indicates whether proration will apply if more shares are tendered than the company is willing to purchase.")
+    #financing_conditions: str = Field(description="Details about how the tender offer is financed or whether there are specific financing conditions.")
+    #regulatory_approvals: str = Field(description="List any necessary regulatory approvals or clearances that must be obtained before the tender offer can be completed.")
+    #factors_affecting_pricing: str = Field(description="A description of factors that the company considered when setting the purchase price range.")
+    #shareholder_requirements: str = Field(description="Requirements a shareholder must meet to qualify as an odd-lot holder (e.g., holding fewer than 100 shares).")
+    #oddlot_priority: str = Field(description="A statement indicating whether odd-lot holders are given priority in the tender offer, formatter as True or False")
+    #risks: str = Field(description="Identify any conditions or contingencies mentioned in the tender offer that could result in its cancellation. Please, expand in the explanation")
+
+    #@field_validator('lower_price', 'higher_price', mode='before')
+    #def check_price(cls, v):
+    #    # Check if the value is a valid number, otherwise return None
+    #    if v is None or not v.replace('.', '', 1).isdigit():  # Allow for decimal numbers
+    #        return None
+    #    return vX
+
+class OddLotExtractor:
+    """Handles asking isolated questions for each OddLot field and aggregates the results."""
+    def __init__(self, retriever, llm):
+        self.retriever = retriever
+        self.llm = llm
+        self.fields = [
+            # Only fields that you want to extract
+            'expiration_date',
+            # Uncomment and add more fields as needed
+            'lower_price',
+            'higher_price',
+            #'shares_sought',
+            #'payment_terms',
+            #'withdrawal_rights',
+            #'tax_consequences',
+            #'method_of_tendering',
+            #'proration',
+            #'financing_conditions',
+            #'regulatory_approvals',
+            #'factors_affecting_pricing',
+            #'shareholder_requirements',
+            #'oddlot_priority',
+            #'risks',
+        ]
+
+    def extract_oddlot_info(self) -> OddLot:
+        """Extract OddLot info by asking isolated questions for each field."""
+        responses = {}
+
+        for field in self.fields:
+            prompt = self.get_field_prompt(field)
+            retrieved_docs = self.retriever.invoke(prompt)
+            combined_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
+            response = self.rag_invoke(prompt, combined_content)
+            print(response)
+            responses[field] = response
+
+        return responses
+
+    def get_field_prompt(self, field: str) -> str:
+        """Generate a prompt for each OddLot field."""
+        field_prompts = {
+            "expiration_date": "What is the deadline for the odd-lot tender offer? Provide the date in the format YYYY-MM-DD.",
+            # Add other field-specific prompts here
+            "lower_price": "What is the lowest price offered in the odd-lot tender offer?",
+            "higher_price": "What is the highest price offered in the odd-lot tender offer?",
+        }
+        return field_prompts[field]
+
+    def rag_invoke(self, prompt: str, content: str) -> str:
+        """Invoke the RAG system to retrieve information for a specific question."""
+        prompt_template = PromptTemplate(
+            template="""
+            You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question.
+            If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+            Question: {prompt}
+            Context: {content}
+            Answer:""",
+            input_variables=["prompt", "content"]
+        )
+
+        formatted_prompt = prompt_template.format_prompt(prompt=prompt, content=content)
+        return self.llm(formatted_prompt)  # Invoke the LLM with the formatted prompt
 
 class PromptManager:
     """Handles different types of prompt templates."""
@@ -76,8 +141,12 @@ class PromptManager:
         """Defines a prompt template for OddLot extraction."""
         format_instructions = parser_.get_format_instructions()
         return PromptTemplate(
-            template="Please extract the following information from the file provided"
-            "\n\n{format_instructions}\n\n{file}",
+            template="""
+            You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. 
+            If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise. Format as needed when specified in the questions
+            Questions: {format_instructions}
+            Context: {file}
+            Answers:""",
             input_variables=["file"],
             partial_variables={"format_instructions": format_instructions},
         )
@@ -158,10 +227,15 @@ class RAGSystem:
         combined_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
         return self.rag_invoke(prompt_type="ODDLOT", content={"file": combined_content})
     
+    def oddlot_from_docs_isolated(self):
+        """Retrieve OddLot information by asking isolated questions for each field."""
+        oddlot_extractor = OddLotExtractor(self.retriever, self.llm)
+        return oddlot_extractor.extract_oddlot_info()
+
+    
     def ask_from_docs(self, query):
         """Perform a query using a general RAG prompt."""
         retrieved_docs = self.retriever.invoke(query)
         combined_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
         return self.rag_invoke(prompt_type="ASK", content={"context": combined_content, "question": query})
-
     

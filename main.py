@@ -8,7 +8,7 @@ if __name__ == "__main__":
     # Parse the HTML files
     html_files = ssai.HTMLHandler(oddlot_folder).process_html_files()
     #html_file = [file for file in html_files if "MNST" in file["source"]]
-    html_file = [file for file in html_files if "ZH" in file["source"]]
+    html_file = [file for file in html_files if "MNST" in file["source"]]
     #MSCF not reading well
     
 
@@ -21,9 +21,9 @@ if __name__ == "__main__":
     #)
     # Extract info from retrieved chunks
     rag = ssai.RAGSystem(html_file, use_local=False)
-    print(rag.oddlot_from_docs())
-    chatbot = ssai.Chatbot(rag)
-    chatbot.start_chat()
+    print(rag.oddlot_from_docs_isolated())
+    #chatbot = ssai.Chatbot(rag)
+    #chatbot.start_chat()
 
     #spinoff_folder = "/Users/ignaciomoyaredondo/OneDrive/obsidian/01_projects/secedgarspecial/db_spinoffs/html"
     #html_files = ssai.HTMLHandler(spinoff_folder).process_html_files()
