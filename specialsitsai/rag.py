@@ -14,7 +14,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing import List, Optional, Union
 from dotenv import load_dotenv
 
-from specialsitsai.oddlots import OddLot
+from specialsitsai.oddlots import ODD_LOT_QUESTIONS
 
 class RAGSystem:
     def __init__(self, html_files: List[dict], use_local: bool = True):
@@ -84,20 +84,8 @@ class RAGSystem:
         )
         rag_chain = prompt | self.llm | parser
         return rag_chain.invoke(content)
-
-    def query_oddlot_details(self):
-        """Method to ask multiple questions about the OddLot tender."""
-        questions = {
-            "expiration_date": {
-                "query": "What is the expiration date of the odd-lot offer?", 
-                "parser": DatetimeOutputParser()
-            },
-            "higher_price": {
-                "query": "Please extract the questions from the odd-lot offer", 
-                "parser": PydanticOutputParser(pydantic_object=OddLot)
-            }
-        }
-
+    
+    def query_questions(self, questions: dict):
         responses = {}
         for key, question in questions.items():
             parser = question["parser"]
@@ -105,4 +93,7 @@ class RAGSystem:
             combined_content = "\n\n".join(doc.page_content for doc in retrieved_docs)
             responses[key] = self.rag_invoke(parser, {"context": combined_content, "query": question["query"]})
         return responses
-    
+
+    def query_oddlot_details(self, questions=ODD_LOT_QUESTIONS):
+        """Method to ask multiple questions about the OddLot tender."""
+        return self.query_questions(questions)
