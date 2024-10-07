@@ -17,9 +17,10 @@ from dotenv import load_dotenv
 from specialsitsai.oddlots import ODD_LOT_QUESTIONS
 
 class RAGSystem:
-    def __init__(self, html_files: List[dict], use_local: bool = True):
+    def __init__(self, html_files: List[dict], use_local: bool = True, embedding_context: bool = False):
         self.html_files = html_files
         self.use_local = use_local
+        self.embedding_context = embedding_context
         self._vectorstore = None
         self._retriever = None
         load_dotenv()
@@ -35,12 +36,58 @@ class RAGSystem:
     def create_document_from_file(file):
         return [Document(metadata={"source": file["source"]}, page_content=file["page_content"])]
     
+    def generate_chunk_context(self, chunk: str, document_summary: str) -> str:
+        """Use an LLM to generate chunk-specific context."""
+        prompt_template = PromptTemplate(
+            template="""
+            Given the following summary of the document:
+            {summary}
+            
+            Please generate a concise context that should be appended to the following chunk:
+            {chunk}
+            
+            Context:""",
+            input_variables=["summary", "chunk"]
+        )
+        prompt = prompt_template.format(summary=document_summary, chunk=chunk)
+        return self.llm.invoke(prompt).content
+
+    def create_contextualized_chunks(self, splits: List[Document], document_summary: str) -> List[Document]:
+        """Enhance each chunk with LLM-generated context."""
+        enhanced_chunks = []
+        for split in splits:
+            chunk_content = split.page_content
+            # Generate context for this chunk using the document summary
+            chunk_context = self.generate_chunk_context(chunk_content, document_summary)
+            # Append the context to the chunk content
+            enhanced_chunk_content = f"{chunk_context}\n\n{chunk_content}"
+            enhanced_chunks.append(Document(metadata=split.metadata, page_content=enhanced_chunk_content))
+        return enhanced_chunks
+    
+    def get_document_summary(self, documents: List[Document]) -> str:
+        """Use an LLM to generate a summary of the entire document."""
+        combined_content = "\n\n".join(doc.page_content for doc in documents)
+        prompt_template = PromptTemplate(
+            template="""
+            Summarize the following document in a concise manner:
+            {document}
+            
+            Summary:""",
+            input_variables=["document"]
+        )
+        prompt = prompt_template.format(document=combined_content)
+        return self.llm.invoke(prompt).content
+    
     @property
     def vectorstore(self):
         """Lazily create the vector store and cache the result."""
         if not self._vectorstore:
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=300)
             splits = text_splitter.split_documents(self.documents)
+            if self.embedding_context == True:
+                document_summary = self.get_document_summary(self.documents)
+                contextualized_splits = self.create_contextualized_chunks(splits, document_summary)
+                self._vectorstore = Chroma.from_documents(documents=contextualized_splits, embedding=self.get_embedding_model())
             self._vectorstore = Chroma.from_documents(documents=splits, embedding=self.get_embedding_model())
         return self._vectorstore
   
