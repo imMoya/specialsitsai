@@ -163,3 +163,7 @@ cython_debug/
 
 # old files
 rag_old.py
+.DS_Store
+*data/
+*substack_html_pages*
+*substack_md_files*
