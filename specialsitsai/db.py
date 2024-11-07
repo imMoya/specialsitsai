@@ -4,10 +4,10 @@ import requests
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 import re
 import warnings
-
+import structlog
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
-
+logger = structlog.get_logger(__name__) 
 
 class HTMLHandler:
     def __init__(self, save_directory: Optional[str] = None):

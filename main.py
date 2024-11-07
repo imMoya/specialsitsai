@@ -1,7 +1,10 @@
 import os
 import specialsitsai as ssai
+import structlog
 
 if __name__ == "__main__":
+    logger = structlog.get_logger(__name__)
+    logger.info("logging")
 
     oddlot_folder = "/Users/ignaciomoyaredondo/OneDrive/obsidian/01_projects/secedgarspecial/db_oddlots/html"
     
@@ -13,8 +16,8 @@ if __name__ == "__main__":
     
 
     # Set up the RAG system
-    rag = ssai.RAGSystem(html_file, use_local=False, embedding_context=False)
-    print(rag.query_oddlot_details())
+    #rag = ssai.RAGSystem(html_file, use_local=False, embedding_context=False)
+    #print(rag.query_oddlot_details())
     #chatbot = ssai.Chatbot(rag)
     #chatbot.start_chat()
 
