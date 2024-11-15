@@ -23,6 +23,14 @@ structlog = "24.4.0"
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.11.2"
 apache-airflow = "^2.10.0"
+fastapi = "^0.110.0"
+uvicorn = "^0.27.1"
+pydantic = "^2.6.3"
+pydantic-settings = "^2.2.1"
+
+
+[tool.poetry.scripts]
+api = "uvicorn app.main:app --reload"
 
 [build-system]
 requires = ["poetry-core"]
