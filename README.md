@@ -2,4 +2,10 @@
 
 ## Running the Application
 
-uvicorn app.main:app --reload
+### 1. Run the backend
+
+poetry run uvicorn app.main:app --reload
+
+### 2. Run the frontend
+cd app-frontend
+npm start
