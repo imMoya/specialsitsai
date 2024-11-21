@@ -23,3 +23,15 @@ export const getSummaryData = async (): Promise<SummaryData> => {
     throw error;
   }
 };
+
+// ... existing imports and setup ...
+
+export const getTickerDetails = async (dataset: string, ticker: string) => {
+    try {
+      const response = await api.get(`/${dataset}/${ticker}`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  };

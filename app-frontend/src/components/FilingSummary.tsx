@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getSummaryData } from '../services/api';
 import { SummaryContainer, Card, CardTitle, TickerList, TickerItem } from '../styles/SummaryStyles';
 import { SummaryData } from '../types';
-
 
 export const FilingSummary: React.FC = () => {
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
@@ -31,7 +31,9 @@ export const FilingSummary: React.FC = () => {
         <TickerList>
           {summaryData.oddlots.tickers.map((ticker) => (
             <TickerItem key={ticker.ticker}>
-              {ticker.ticker} ({ticker.num_filings} filings, latest: {ticker.latest_filing_date})
+              <Link to={`/oddlots/${ticker.ticker}`}>
+                {ticker.ticker} ({ticker.num_filings} filings, latest: {ticker.latest_filing_date})
+              </Link>
             </TickerItem>
           ))}
         </TickerList>
@@ -44,7 +46,9 @@ export const FilingSummary: React.FC = () => {
         <TickerList>
           {summaryData.spinoffs.tickers.map((ticker) => (
             <TickerItem key={ticker.ticker}>
-              {ticker.ticker} ({ticker.num_filings} filings, latest: {ticker.latest_filing_date})
+              <Link to={`/spinoffs/${ticker.ticker}`}>
+                {ticker.ticker} ({ticker.num_filings} filings, latest: {ticker.latest_filing_date})
+              </Link>
             </TickerItem>
           ))}
         </TickerList>
