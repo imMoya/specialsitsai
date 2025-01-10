@@ -25,7 +25,7 @@ dag = DAG(
 # Define the task
 run_ssai = BashOperator(
     task_id='run_ssai',
-    bash_command='cd /Users/ignaciomoyaredondo/OneDrive/obsidian/01_projects/secedgarspecial/ \
+    bash_command='cd /***/secedgarspecial/ \
         && poetry run python main.py',
     dag=dag,
 )
